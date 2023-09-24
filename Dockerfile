@@ -21,32 +21,36 @@
 
 FROM ubuntu:20.04
 
-ARG DEFAUL_TZ=America/Los_Angeles
+ARG DEFAULT_TZ=America/Los_Angeles
 ENV DEFAULT_TZ=$DEFAULT_TZ
 ARG MODULAR_HOME=/home/user/.modular
 ENV MODULAR_HOME=$MODULAR_HOME
 
 RUN apt-get update \
-    && DEBIAN_FRONTEND=noninteractive $DEFAULT_TZ apt-get install -y \
+    && DEBIAN_FRONTEND=noninteractive TZ=$DEFAULT_TZ apt-get install -y \
     tzdata \
     vim \
     sudo \
-    curl \ 
-    python3 \
-    pip \
-    wget \
-    && python3 -m pip install \
-    jupyterlab \
-    ipykernel \
-    matplotlib \
-    ipywidgets \
-    gradio 
+    curl \
+    git \
+    wget && \
+    rm -rf /var/lib/apt/lists/*
 
 RUN curl -fsSL https://repo.anaconda.com/miniconda/Miniconda3-py38_23.5.2-0-Linux-x86_64.sh > /tmp/miniconda.sh \
     && chmod +x /tmp/miniconda.sh \
     && /tmp/miniconda.sh -b -p /opt/conda
 
-ARG AUTH_KEY=DEFAULT_KEY
+ENV PATH=/opt/conda/bin:$PATH
+RUN conda init
+RUN pip install \
+    jupyterlab \
+    ipykernel \
+    matplotlib \
+    ipywidgets \
+    gradio
+
+# A random default token
+ARG AUTH_KEY=5ca1ab1e
 ENV AUTH_KEY=$AUTH_KEY
 
 RUN curl https://get.modular.com | MODULAR_AUTH=$AUTH_KEY sh - \
@@ -56,9 +60,6 @@ RUN useradd -m -u 1000 user
 RUN chown -R user $MODULAR_HOME
 
 ENV PATH="$PATH:/opt/conda/bin:$MODULAR_HOME/pkg/packages.modular.com_mojo/bin"
-
-RUN conda init 
-RUN pip install gradio
 
 USER user
 WORKDIR $HOME/app
