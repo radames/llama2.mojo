@@ -48,12 +48,10 @@ RUN pip install \
     matplotlib \
     ipywidgets \
     gradio
-
-# A random default token
-ARG AUTH_KEY=5ca1ab1e
-ENV AUTH_KEY=$AUTH_KEY
-
-RUN curl https://get.modular.com | MODULAR_AUTH=$AUTH_KEY sh - \
+    
+RUN --mount=type=secret,id=MODULAR_AUTH,mode=0444,required=true \
+    curl https://get.modular.com | sh - \
+    && modular auth $(cat /run/secrets/MODULAR_AUTH) \
     && modular install mojo 
 
 RUN useradd -m -u 1000 user
@@ -65,9 +63,11 @@ USER user
 WORKDIR $HOME/app
 
 COPY --chown=user . $HOME/app
-RUN wget -c https://huggingface.co/karpathy/tinyllamas/resolve/main/stories15M.bin
-RUN wget -c https://huggingface.co/karpathy/tinyllamas/resolve/main/stories42M.bin
-RUN wget -c https://huggingface.co/karpathy/tinyllamas/resolve/main/stories110M.bin
+RUN wget -c -nv https://huggingface.co/karpathy/tinyllamas/resolve/main/stories15M.bin
+RUN wget -c -nv https://huggingface.co/karpathy/tinyllamas/resolve/main/stories42M.bin
+RUN wget -c -nv https://huggingface.co/karpathy/tinyllamas/resolve/main/stories110M.bin
+RUN wget -c -nv https://huggingface.co/kirp/TinyLlama-1.1B-Chat-v0.2-bin/resolve/main/tok_tl-chat.bin
+RUN wget -c -nv https://huggingface.co/kirp/TinyLlama-1.1B-Chat-v0.2-bin/resolve/main/tl-chat.bin
 
 # CMD ["mojo", "llama2.mojo"]
 CMD ["python3", "gradio_app.py"]
